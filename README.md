@@ -1,6 +1,6 @@
-# KPSTI Project Monitoring Dashboard (`kpsti-dashboard`)
+# KPSTI Project Monitoring System (`kpsti-project-monitoring`)
 
-Executive Monitoring Dashboard & AI Assistant for **Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI)**.
+Executive Project Monitoring Dashboard & AI Assistant for **Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI)**.
 
 Built with **React 19**, **Vite 6**, **Tailwind CSS v4**, **Firebase Firestore**, and **Gemini AI / Discovery Engine**.
 
@@ -33,12 +33,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📁 Renaming Local Directory (Optional)
 
-If you'd like your local folder name to match the project name `kpsti-dashboard`:
+If you'd like your local folder name to match the project name `kpsti-project-monitoring`:
 
 ```powershell
 cd ..
-Rename-Item -Path "remix-kpsti-project-monitoring-dashboard" -NewName "kpsti-dashboard"
-cd kpsti-dashboard
+Rename-Item -Path "remix-kpsti-project-monitoring-dashboard" -NewName "kpsti-project-monitoring"
+cd kpsti-project-monitoring
 ```
 
 ---
@@ -49,15 +49,15 @@ cd kpsti-dashboard
    ```bash
    git init
    git add .
-   git commit -m "feat: initial commit for KPSTI dashboard"
+   git commit -m "feat: initial commit for KPSTI project monitoring"
    ```
 
-2. Create a new repository on [GitHub](https://github.com/new) named `kpsti-dashboard`.
+2. Create a new repository on [GitHub](https://github.com/new) named `kpsti-project-monitoring`.
 
 3. Link your remote repository and push:
    ```bash
    git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/kpsti-dashboard.git
+   git remote add origin https://github.com/YOUR_USERNAME/kpsti-project-monitoring.git
    git push -u origin main
    ```
 
@@ -70,7 +70,7 @@ This project is fully configured for continuous deployment on **Netlify** with N
 ### Step-by-Step Deployment:
 1. Log in to [Netlify](https://app.netlify.com/).
 2. Click **Add new site** > **Import an existing project**.
-3. Select **GitHub** and authorize access to your `kpsti-dashboard` repository.
+3. Select **GitHub** and authorize access to your `kpsti-project-monitoring` repository.
 4. Netlify will automatically detect configuration from `netlify.toml`:
    - **Build Command**: `npm run build`
    - **Publish Directory**: `dist`
@@ -86,7 +86,7 @@ This project is fully configured for continuous deployment on **Netlify** with N
 ## 🛠 Project Structure
 
 ```
-kpsti-dashboard/
+kpsti-project-monitoring/
 ├── netlify/
 │   └── functions/
 │       └── api.ts          # Netlify Serverless Function adapter
