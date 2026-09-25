@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Test collection for live connectivity validation
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+
+    // KPSTI Sabah Government Project Monitoring Portal
+    match /projects/{projectId} {
+      allow read, write: if true;
+    }
+
+    // Submissions collection - audit log
+    match /submissions/{submissionId} {
+      allow read, create: if true;
+      allow update, delete: if false; // Immutable audit log
+    }
+  }
+}
+
+

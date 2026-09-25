@@ -1,0 +1,8 @@
+{
+  "name": "Remix KPSTI Project Monitoring Dashboard",
+  "description": "Sistem Pemantauan & Pengurusan Projek Bersepadu bagi Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI) untuk pengurusan belanjawan, kemajuan fizikal, pemantauan varians, dan pelaporan eksekutif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

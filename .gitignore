@@ -1,0 +1,15 @@
+# Dependencies & build output
+node_modules/
+build/
+dist/
+.netlify/
+coverage/
+
+# Logs & temp files
+*.log
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env*
+!.env.example

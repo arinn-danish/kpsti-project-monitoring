@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 20 470 280" width="100%" height="100%">
+  <defs>
+    <!-- Soft shadow filter for graphic elements matching the official emblem depth -->
+    <filter id="loopShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-opacity="0.25" flood-color="#051240" />
+    </filter>
+  </defs>
+
+  <!-- ATOMIC ORBITAL GRAPHICS -->
+  <g id="atomicOrbits" filter="url(#loopShadow)">
+    <!-- Vertical-ish Blue Orbital Loop (tilted slightly right) -->
+    <ellipse cx="338" cy="158" rx="45" ry="116" transform="rotate(15 338 158)"
+             stroke="#0022d6" stroke-width="7" fill="none" stroke-linecap="round" />
+
+    <!-- Diagonal Blue Orbital Loop (tilted across) -->
+    <ellipse cx="338" cy="158" rx="122" ry="46" transform="rotate(-20 338 158)"
+             stroke="#0022d6" stroke-width="7" fill="none" stroke-linecap="round" />
+
+    <!-- Red Intersecting Orbit Loop (dynamic sweeping path wrapping around S and reaching apex to right) -->
+    <path d="M 190,108 C 215,96 265,102 335,124 C 385,140 435,160 435,160 C 435,160 388,194 325,220 C 265,245 200,240 172,215 C 160,202 160,185 166,170"
+          stroke="#e61e2b" stroke-width="7.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+    <!-- Blue Electron Nodes / Spheres -->
+    <!-- Electron 1: Top-Left on Red loop -->
+    <circle cx="190" cy="108" r="9.5" fill="#08188a" stroke="#ffffff" stroke-width="1.2" />
+    <!-- Electron 2: Top-Right on Blue diagonal loop -->
+    <circle cx="446" cy="116" r="9.5" fill="#08188a" stroke="#ffffff" stroke-width="1.2" />
+    <!-- Electron 3: Bottom on Blue vertical loop -->
+    <circle cx="330" cy="270" r="9.5" fill="#08188a" stroke="#ffffff" stroke-width="1.2" />
+  </g>
+
+  <!-- KPSTI LOGOTYPE -->
+  <!-- "K" and "P" in deep blue, "S" in bright red, "T" and "I" in deep blue -->
+  <g id="kpstiLogotype" font-family="'Plus Jakarta Sans', 'Montserrat', 'Arial Black', -apple-system, sans-serif" font-weight="900" font-size="106" letter-spacing="-1">
+    <text x="44" y="174" fill="#0c2378">K</text>
+    <text x="122" y="174" fill="#0c2378">P</text>
+    <text x="194" y="174" fill="#e61e2b">S</text>
+    <text x="264" y="174" fill="#0c2378">T</text>
+    <text x="334" y="174" fill="#0c2378">I</text>
+  </g>
+
+  <!-- SUBTEXT: KEMENTERIAN PENDIDIKAN, SAINS, TEKNOLOGI DAN INOVASI SABAH -->
+  <text x="44" y="196" font-family="'Plus Jakarta Sans', 'Montserrat', 'Arial Black', -apple-system, sans-serif"
+        font-weight="900" font-size="11.2" letter-spacing="0.1" text-rendering="geometricPrecision">
+    <tspan fill="#0c2378">KEMENTERIAN PENDIDIKAN, </tspan>
+    <tspan fill="#e61e2b">SAINS, </tspan>
+    <tspan fill="#0c2378">TEKNOLOGI DAN INOVASI SABAH</tspan>
+  </text>
+</svg>
+

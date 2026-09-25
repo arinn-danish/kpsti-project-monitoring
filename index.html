@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remix KPSTI Project Monitoring Dashboard</title>
+  <meta name="description" content="Sistem Pemantauan & Pengurusan Projek Bersepadu bagi Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI) untuk pengurusan belanjawan, kemajuan fizikal, pemantauan varians, dan pelaporan eksekutif." />
+  <meta property="og:title" content="Remix KPSTI Project Monitoring Dashboard" />
+  <meta property="og:description" content="Sistem Pemantauan & Pengurusan Projek Bersepadu bagi Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI) untuk pengurusan belanjawan, kemajuan fizikal, pemantauan varians, dan pelaporan eksekutif." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- jsPDF & html2canvas for Enterprise PDF Report Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+          },
+          colors: {
+            gov: {
+              navy: '#0f172a',
+              slate: '#1e293b',
+              muted: '#64748b',
+              emerald: '#059669',
+              emeraldDark: '#047857',
+              emeraldLight: '#ecfdf5',
+              surface: '#f8fafc',
+              border: '#e2e8f0',
+              accent: '#2563eb'
+            }
+          },
+          borderRadius: {
+            'xl': '0.75rem',
+            '2xl': '1rem'
+          },
+          boxShadow: {
+            'card': '0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05)',
+            'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    
+    @media print {
+      body.printing-report * {
+        visibility: hidden !important;
+      }
+      body.printing-report #reportPrintContainer,
+      body.printing-report #reportPrintContainer * {
+        visibility: visible !important;
+      }
+      body.printing-report #reportPrintContainer {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 32px !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+      }
+
+      body:not(.printing-report) .no-print { display: none !important; }
+      body:not(.printing-report) .print-only { display: block !important; }
+      body { background: #ffffff !important; color: #000000 !important; }
+      .shadow-sm, .shadow-md, .shadow-lg, .shadow-card { box-shadow: none !important; }
+    }
+    .print-only { display: none; }
+    
+    /* Geometric Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f8fafc; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-gov-surface antialiased overflow-x-hidden w-full max-w-full">
+
+  <!-- AUTHENTICATION GATE OVERLAY (FIREBASE GOOGLE SIGN-IN GATE) -->
+  <div id="authGateOverlay" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden relative">
+      
+      <!-- Top Decorator Bar -->
+      <div class="h-2 bg-gradient-to-r from-emerald-600 via-blue-600 to-slate-900"></div>
+
+      <div class="p-6 sm:p-8 text-center">
+        <!-- Official KPSTI Logo Badge -->
+        <div class="mx-auto bg-white p-2.5 rounded-2xl shadow-md border border-slate-200 inline-flex flex-col items-center justify-center mb-3.5">
+          <svg viewBox="0 0 160 160" class="w-16 h-16 sm:w-20 sm:h-20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="80" cy="80" r="76" fill="#0b1e3b" stroke="#f59e0b" stroke-width="3.5"/>
+            <circle cx="80" cy="80" r="69" fill="#0f2b5c" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <circle cx="80" cy="80" r="65" fill="#f8fafc"/>
+            <path id="crestUpperArcGate" d="M 22,80 A 58,58 0 1,1 138,80" fill="none"/>
+            <text font-size="6.8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" fill="#0b1e3b" letter-spacing="0.7">
+              <textPath href="#crestUpperArcGate" startOffset="50%" text-anchor="middle">
+                KEMENTERIAN PENDIDIKAN, SAINS, TEKNOLOGI &amp; INOVASI
+              </textPath>
+            </text>
+            <path d="M 28,126 C 50,118 110,118 132,126 L 126,142 C 104,136 56,136 34,142 Z" fill="#cf142b" stroke="#991b1b" stroke-width="1"/>
+            <text x="80" y="137" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+              SABAH
+            </text>
+            <g transform="translate(80, 76)">
+              <path d="M -34,10 L -22,-6 L -10,-12 L -2,-26 L 6,-26 L 14,-14 L 24,-6 L 34,10 Z" fill="#00a3e0"/>
+              <path d="M -2,-26 L 6,-26 L 14,-14 L 4,-8 L -2,-18 Z" fill="#ffffff" opacity="0.6"/>
+              <path d="M -34,10 L 34,10 L 34,22 C 34,34 0,42 0,42 C 0,42 -34,34 -34,22 Z" fill="#0f2b5c"/>
+              <path d="M -16,14 C -8,11 0,14 0,14 C 0,14 8,11 16,14 L 16,23 C 8,20 0,23 0,23 C 0,23 -8,20 -16,23 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
+              <line x1="0" y1="14" x2="0" y2="23" stroke="#0f2b5c" stroke-width="1"/>
+              <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#f59e0b" stroke-width="1.8" transform="rotate(-28)" opacity="0.95"/>
+              <circle cx="23" cy="-14" r="3" fill="#cf142b"/>
+              <circle cx="-23" cy="14" r="2.8" fill="#00a3e0"/>
+              <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#00a3e0" stroke-width="1.8" transform="rotate(32)" opacity="0.95"/>
+              <circle cx="-22" cy="-14" r="3" fill="#f59e0b"/>
+              <circle cx="22" cy="14" r="2.8" fill="#cf142b"/>
+              <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#ffffff" stroke-width="1.6" transform="rotate(90)" opacity="0.85"/>
+              <circle cx="0" cy="27" r="2.5" fill="#f59e0b"/>
+              <circle cx="0" cy="-31" r="2.5" fill="#00a3e0"/>
+              <circle cx="0" cy="-2" r="5" fill="#0f2b5c" stroke="#f59e0b" stroke-width="1.5"/>
+              <circle cx="0" cy="-2" r="2.5" fill="#f8fafc"/>
+            </g>
+          </svg>
+          <span class="font-black text-xs text-slate-900 tracking-wider mt-1">KPSTI SABAH</span>
+        </div>
+
+        <div class="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-200 mb-2.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Firebase Authentication &amp; Firestore Gated</span>
+        </div>
+
+        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">
+          Portal e-Pantau KPSTI
+        </h2>
+        <p class="text-xs text-slate-600 font-semibold mt-1">
+          Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI)
+        </p>
+
+        <p class="text-xs text-slate-600 mt-4 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-left">
+          Akses ke sistem pemantauan projek, peruntukan belanjawan negeri, dan audit penyerahan Cloud Firestore adalah <strong>terhad kepada pegawai yang disahkan</strong>. Sila log masuk dengan akaun Google Workspace rasmi anda.
+        </p>
+
+        <!-- Google Sign-In Actions -->
+        <div class="mt-6 space-y-3">
+          <button id="btnGoogleSignIn" onclick="loginWithGoogle()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-3 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+            <!-- Google Logo SVG -->
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span class="text-sm font-semibold tracking-wide">Log Masuk dengan Google</span>
+          </button>
+
+          <!-- Quick Test / Demo Sign-In fallback -->
+          <button id="btnQuickDemoSignIn" onclick="loginWithDemoUser()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2 px-3 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 border border-slate-300/80">
+            <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Akses Demonstrasi (ermyza.hillary@sabah.gov.my)</span>
+          </button>
+        </div>
+
+        <div id="authErrorMessage" class="hidden mt-3 text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg flex items-center space-x-1.5 text-left">
+          <i data-lucide="alert-octagon" class="w-4 h-4 flex-shrink-0"></i>
+          <span id="authErrorText">Ralat log masuk. Sila cuba lagi.</span>
+        </div>
+
+        <!-- Security Badge -->
+        <div class="mt-6 pt-4 border-t border-slate-200 flex items-center justify-center space-x-2 text-[11px] text-slate-400">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>Dilindungi oleh Firebase Authentication &amp; Cloud Firestore</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Government Header Bar (Official KPSTI Branding) -->
+  <header class="bg-slate-900 text-white border-b-2 border-emerald-500 no-print sticky top-0 z-30 shadow-md w-full">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20 gap-2">
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+          <!-- Official KPSTI Logo Emblem -->
+          <div class="bg-white p-1 sm:p-1.5 rounded-xl shadow-sm border border-slate-200 flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
+            <svg viewBox="0 0 160 160" class="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="80" cy="80" r="76" fill="#0b1e3b" stroke="#f59e0b" stroke-width="3.5"/>
+              <circle cx="80" cy="80" r="69" fill="#0f2b5c" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <circle cx="80" cy="80" r="65" fill="#f8fafc"/>
+              <path id="crestUpperArcNav" d="M 22,80 A 58,58 0 1,1 138,80" fill="none"/>
+              <text font-size="6.8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" fill="#0b1e3b" letter-spacing="0.7">
+                <textPath href="#crestUpperArcNav" startOffset="50%" text-anchor="middle">
+                  KEMENTERIAN PENDIDIKAN, SAINS, TEKNOLOGI &amp; INOVASI
+                </textPath>
+              </text>
+              <path d="M 28,126 C 50,118 110,118 132,126 L 126,142 C 104,136 56,136 34,142 Z" fill="#cf142b" stroke="#991b1b" stroke-width="1"/>
+              <text x="80" y="137" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+                SABAH
+              </text>
+              <g transform="translate(80, 76)">
+                <path d="M -34,10 L -22,-6 L -10,-12 L -2,-26 L 6,-26 L 14,-14 L 24,-6 L 34,10 Z" fill="#00a3e0"/>
+                <path d="M -2,-26 L 6,-26 L 14,-14 L 4,-8 L -2,-18 Z" fill="#ffffff" opacity="0.6"/>
+                <path d="M -34,10 L 34,10 L 34,22 C 34,34 0,42 0,42 C 0,42 -34,34 -34,22 Z" fill="#0f2b5c"/>
+                <path d="M -16,14 C -8,11 0,14 0,14 C 0,14 8,11 16,14 L 16,23 C 8,20 0,23 0,23 C 0,23 -8,20 -16,23 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8"/>
+                <line x1="0" y1="14" x2="0" y2="23" stroke="#0f2b5c" stroke-width="1"/>
+                <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#f59e0b" stroke-width="1.8" transform="rotate(-28)" opacity="0.95"/>
+                <circle cx="23" cy="-14" r="3" fill="#cf142b"/>
+                <circle cx="-23" cy="14" r="2.8" fill="#00a3e0"/>
+                <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#00a3e0" stroke-width="1.8" transform="rotate(32)" opacity="0.95"/>
+                <circle cx="-22" cy="-14" r="3" fill="#f59e0b"/>
+                <circle cx="22" cy="14" r="2.8" fill="#cf142b"/>
+                <ellipse cx="0" cy="-2" rx="30" ry="11" stroke="#ffffff" stroke-width="1.6" transform="rotate(90)" opacity="0.85"/>
+                <circle cx="0" cy="27" r="2.5" fill="#f59e0b"/>
+                <circle cx="0" cy="-31" r="2.5" fill="#00a3e0"/>
+                <circle cx="0" cy="-2" r="5" fill="#0f2b5c" stroke="#f59e0b" stroke-width="1.5"/>
+                <circle cx="0" cy="-2" r="2.5" fill="#f8fafc"/>
+              </g>
+            </svg>
+            <div class="flex flex-col text-left">
+              <span class="font-black text-xs sm:text-base tracking-tight text-slate-900 leading-none">KPSTI</span>
+              <span class="text-[6.5px] sm:text-[7.5px] font-extrabold text-red-600 tracking-wider uppercase leading-tight mt-0.5">SABAH</span>
+            </div>
+          </div>
+
+          <div class="min-w-0">
+            <div class="flex items-center space-x-1.5 flex-wrap">
+              <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400 whitespace-nowrap">e-Pantau KPSTI</span>
+              <span class="text-[9px] sm:text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.2 rounded font-mono hidden md:inline-block">v3.2 Official</span>
+            </div>
+            <h1 class="text-xs sm:text-sm lg:text-base font-bold tracking-tight text-white leading-tight truncate">
+              Sistem Pemantauan Projek Bersepadu
+            </h1>
+            <p class="text-[9px] sm:text-xs text-slate-300 font-medium truncate hidden sm:block">
+              Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI)
+            </p>
+          </div>
+        </div>
+
+        <!-- Role Selector, User Profile & Quick Actions -->
+        <div class="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <!-- Role Switcher -->
+          <div class="hidden xl:flex flex-col text-right">
+            <span class="text-[10px] uppercase tracking-wider text-slate-400 font-medium">Peranan</span>
+            <select id="userRoleSelect" onchange="handleRoleChange()" class="text-xs bg-slate-800 border border-slate-700 text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+              <option value="pengurusan">Pengurusan Tertinggi (SUB / KSU)</option>
+              <option value="pegawai_bajet">Pegawai Pemantau Belanjawan</option>
+              <option value="ketua_jabatan">Ketua Bahagian / Unit</option>
+              <option value="pegawai_projek" selected>Pegawai Projek (Pelaksana)</option>
+            </select>
+          </div>
+
+          <!-- Document Upload & Extraction Quick Tool -->
+          <button onclick="openDocumentExtractionModal()" title="Muat Naik &amp; Ekstrak Dokumen / Minit" class="inline-flex items-center space-x-1 p-1.5 sm:px-3 sm:py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Ekstrak Minit</span>
+          </button>
+
+          <!-- Add Project Button -->
+          <button onclick="openProjectModal()" class="inline-flex items-center space-x-1 p-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition focus:outline-none focus:ring-2 focus:ring-emerald-400">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            <span class="hidden sm:inline">Daftar Projek</span>
+            <span class="sm:hidden text-xs">Daftar</span>
+          </button>
+
+          <!-- Authenticated User Profile Badge & Logout -->
+          <div id="userHeaderProfile" class="flex items-center space-x-1 sm:space-x-2 bg-slate-800/90 border border-slate-700/80 p-1 sm:px-2.5 sm:py-1 rounded-xl">
+            <div id="userAvatarContainer" class="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-emerald-700 text-white font-bold flex items-center justify-center text-[10px] sm:text-xs border border-emerald-400/50 flex-shrink-0">
+              <img id="userAvatarImg" src="" alt="" class="w-full h-full object-cover hidden">
+              <span id="userAvatarInitials">EH</span>
+            </div>
+            <div class="hidden lg:flex flex-col text-left max-w-[130px] xl:max-w-[170px]">
+              <span id="userDisplayName" class="text-xs font-semibold text-white truncate">Ermyza Hillary</span>
+              <span id="userDisplayEmail" class="text-[10px] text-slate-400 truncate">ermyza.hillary@sabah.gov.my</span>
+            </div>
+            <button id="btnSignOutHeader" onclick="logoutUser()" title="Log Keluar" class="p-1 sm:p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 rounded-lg transition">
+              <i data-lucide="log-out" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Alert Bar (Warnings / System Alerts) -->
+  <div id="globalAlertBanner" class="bg-amber-50 border-b border-amber-200/80 px-4 py-2.5 text-amber-950 text-xs sm:text-sm flex items-center justify-between no-print w-full">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+      <div class="flex items-center space-x-2.5">
+        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0"></i>
+        <span id="globalAlertText" class="font-medium">
+          <strong>Perhatian:</strong> Terdapat projek memerlukan semakan status dan pengemaskinian kemajuan tahunan bagi kementerian.
+        </span>
+      </div>
+      <button onclick="document.getElementById('globalAlertBanner').classList.add('hidden')" class="text-amber-800 hover:text-amber-950 text-xs font-semibold ml-4">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-grow flex flex-col gap-6">
+
+    <!-- 4-Page Top Navigation Bar -->
+    <div class="w-full max-w-full overflow-x-auto pb-1 scrollbar-none">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3 no-print min-w-max gap-3">
+        <div class="flex space-x-1 sm:space-x-1.5 bg-slate-200/60 p-1.5 rounded-xl">
+          <button id="navBtnCore" onclick="switchPage('core')" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-slate-900 text-white shadow-sm flex items-center space-x-1.5 sm:space-x-2 transition">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+            <span>Core Interface</span>
+          </button>
+          <button id="navBtnReports" onclick="switchPage('reports')" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 flex items-center space-x-1.5 sm:space-x-2 transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Laporan &amp; Tarikh</span>
+          </button>
+          <button id="navBtnAnalytics" onclick="switchPage('analytics')" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 flex items-center space-x-1.5 sm:space-x-2 transition">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+            <span>Analytics Engine</span>
+          </button>
+          <button id="navBtnAudit" onclick="switchPage('audit')" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-200/80 flex items-center space-x-1.5 sm:space-x-2 transition">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Audit Trail</span>
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="triggerVerificationModal('report_finalize')" class="px-3 sm:px-3.5 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg hover:bg-emerald-100 flex items-center space-x-1.5 transition shadow-sm">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Pengesahan Rasmi (HITL)</span>
+            <span class="sm:hidden">HITL</span>
+          </button>
+          <button onclick="exportDataCSV()" class="px-2.5 sm:px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center space-x-1.5 transition shadow-sm">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Eksport CSV</span>
+          </button>
+          <button onclick="window.print()" class="px-2.5 sm:px-3 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center space-x-1.5 transition shadow-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Cetak</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 1: CORE INTERFACE (INPUT & OUTPUT PORTAL) ==================== -->
+    <div id="pageContentCore" class="flex flex-col gap-8">
+      
+      <!-- 1. INPUT PORTAL -->
+      <section id="inputPortalSection" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Input Portal Header -->
+        <div class="bg-slate-900 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800">
+          <div class="flex items-center space-x-3">
+            <div class="p-2 bg-slate-800 rounded-xl text-emerald-400 border border-slate-700">
+              <i data-lucide="file-input" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-emerald-400">Portal Kemasukan Data &amp; Fail</span>
+                <span id="formModeTag" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-600/40">
+                  Daftar Projek Baharu
+                </span>
+              </div>
+              <h2 id="portalFormHeading" class="text-sm sm:text-base font-bold text-white mt-0.5">Borang Piawai Pendaftaran &amp; Penyerahan Maklumat Projek</h2>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="openDocumentExtractionModal()" class="px-3 py-1.5 text-xs text-blue-300 hover:text-white bg-blue-900/60 hover:bg-blue-800 border border-blue-700 rounded-lg transition flex items-center space-x-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-400"></i>
+              <span>Ekstrak Minit AI</span>
+            </button>
+            <button type="button" onclick="resetFormPortal()" class="px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition flex items-center space-x-1">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span>Set Semula</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Portal Form Body -->
+        <form id="projectForm" onsubmit="saveProjectForm(event)" class="p-5 sm:p-7 flex flex-col gap-5 text-xs sm:text-sm">
+          
+          <!-- Hidden Project ID -->
+          <input type="hidden" id="formProjectId" value="">
+
+          <!-- Form Error Alert -->
+          <div id="formErrorMessage" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-xl text-xs flex items-center space-x-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
+            <span id="formErrorText">Sila lengkapkan maklumat projek yang diperlukan.</span>
+          </div>
+
+          <!-- Section A: Maklumat Asas & Jabatan -->
+          <div>
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>1. Maklumat Asas, Bahagian &amp; Tahun Pelaksanaan</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              <div class="lg:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-1">Tajuk Projek <span class="text-rose-500">*</span></label>
+                <input type="text" id="formTitle" oninput="updateDynamicSummary()" required placeholder="Contoh: Projek Pembangunan Hab Inovasi Robotik" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-slate-50/50">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Kod Projek <span class="text-rose-500">*</span></label>
+                <input type="text" id="formCode" oninput="updateDynamicSummary()" required placeholder="PRJ-KPSTI-2026-XXX" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-slate-50/50">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Bahagian / Unit KPSTI <span class="text-rose-500">*</span></label>
+                <select id="formDepartment" onchange="updateDynamicSummary()" required class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-white">
+                  <option value="Bahagian Pendidikan (BP)">Bahagian Pendidikan (BP)</option>
+                  <option value="Bahagian Inovasi dan Digital (BID)">Bahagian Inovasi dan Digital (BID)</option>
+                  <option value="Bahagian Infrastruktur ICT dan EGS (BIIE)">Bahagian Infrastruktur ICT dan EGS (BIIE)</option>
+                  <option value="Bahagian TVET dan Pemantauan Projek (BTPP)">Bahagian TVET dan Pemantauan Projek (BTPP)</option>
+                  <option value="Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)">Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)</option>
+                  <option value="Bahagian Akaun (BA)">Bahagian Akaun (BA)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Tahun Peruntukan / Projek <span class="text-rose-500">*</span></label>
+                <select id="formYear" onchange="updateDynamicSummary()" required class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-white">
+                  <option value="2026" selected>2026 (Tahun Semasa)</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                  <option value="2023">2023</option>
+                  <option value="2027">2027</option>
+                  <option value="2028">2028</option>
+                  <option value="2029">2029</option>
+                  <option value="2030">2030</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Pegawai Bertanggungjawab <span class="text-rose-500">*</span></label>
+                <input type="text" id="formOfficer" oninput="updateDynamicSummary()" required placeholder="Nama Pegawai Penyelaras" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-slate-50/50">
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block font-semibold text-slate-700 mb-1">Objektif &amp; Keterangan Pelaksanaan <span class="text-rose-500">*</span></label>
+                <textarea id="formDescription" oninput="updateDynamicSummary()" rows="2" required placeholder="Nyatakan skop kerja, impak, dan objektif utama projek mengikut ketetapan KPSTI..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none bg-slate-50/50"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section B: Kewangan & Belanjawan -->
+          <div class="bg-slate-50/80 p-4 sm:p-5 rounded-xl border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span>2. Peruntukan Kewangan &amp; Kiraan Varians (Ringgit Malaysia)</span>
+              </div>
+              <span class="text-[10px] text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md font-semibold font-mono">Kiraan Dinamik</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Siling Keseluruhan (RM)</label>
+                <input type="number" step="1000" id="formCeiling" oninput="updateDynamicSummary()" required placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold font-mono focus:outline-none focus:border-emerald-500 bg-white">
+              </div>
+              <div>
+                <label id="labelAnnualAllocation" class="block text-[11px] font-semibold text-slate-600 mb-1">Peruntukan Tahunan Projek (RM) <span class="text-rose-500">*</span></label>
+                <input type="number" step="1000" id="formAnnualAllocation" oninput="updateDynamicSummary()" required placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-blue-700 font-mono focus:outline-none focus:border-emerald-500 bg-white">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Unjuran Belanja (RM)</label>
+                <input type="number" step="1000" id="formProjectedSpend" oninput="updateDynamicSummary()" required placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold font-mono focus:outline-none focus:border-emerald-500 bg-white">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Perbelanjaan Sebenar (RM)</label>
+                <input type="number" step="1000" id="formActualSpend" oninput="updateDynamicSummary()" required placeholder="0.00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 font-mono focus:outline-none focus:border-emerald-500 bg-white">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section C: Pelaksanaan, Kemajuan & Isu -->
+          <div>
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span>3. Status Pelaksanaan, Kemajuan Fizikal &amp; Isu</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Status Projek <span class="text-rose-500">*</span></label>
+                <select id="formStatus" onchange="updateDynamicSummary()" required class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 bg-white">
+                  <option value="Dalam Pelaksanaan">Dalam Pelaksanaan</option>
+                  <option value="Tertangguh/Lewat">Tertangguh / Lewat</option>
+                  <option value="Dalam Perancangan">Dalam Perancangan</option>
+                  <option value="Selesai">Selesai</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Kemajuan Fizikal (%)</label>
+                <input type="number" min="0" max="100" id="formPhysicalProgress" oninput="updateDynamicSummary()" required placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-center font-mono focus:outline-none focus:border-emerald-500 bg-slate-50/50">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Tarikh Mula</label>
+                <input type="date" id="formStartDate" onchange="updateDynamicSummary()" required class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500 bg-slate-50/50">
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Tarikh Siap Dijangka</label>
+                <input type="date" id="formEndDate" onchange="updateDynamicSummary()" required class="w-full border border-slate-300 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500 bg-slate-50/50">
+              </div>
+            </div>
+
+            <div class="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Isu / Kekangan Semasa</label>
+                <textarea id="formIssues" oninput="updateDynamicSummary()" rows="2" placeholder="Nyatakan sebarang isu pelaksanaan atau kelewatan jika ada..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 bg-slate-50/50"></textarea>
+              </div>
+              <div>
+                <label class="block font-semibold text-slate-700 mb-1">Catatan &amp; Tindakan Susulan</label>
+                <textarea id="formRemarks" oninput="updateDynamicSummary()" rows="2" placeholder="Pelan mitigasi atau syor penyelarasan..." class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 bg-slate-50/50"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section D: File Drop Zone -->
+          <div>
+            <div class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <div class="flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                <span>4. Zon Muat Naik Fail &amp; Dokumen Sokongan</span>
+              </div>
+              <button type="button" onclick="openDocumentExtractionModal()" class="text-xs text-blue-700 hover:text-blue-900 font-semibold flex items-center space-x-1">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Ekstrak Minit Mesyuarat</span>
+              </button>
+            </div>
+            
+            <div id="dropZoneContainer" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center bg-slate-50/60 hover:bg-slate-100 hover:border-emerald-500 transition cursor-pointer flex flex-col items-center justify-center gap-1.5">
+              <input type="file" id="fileUploadInput" multiple class="hidden" onchange="handleFileUpload(event)">
+              <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+              </div>
+              <span class="text-xs font-bold text-slate-800">Drop or choose file to upload</span>
+              <span class="text-[11px] text-slate-500">Sokongan: PDF, DOCX, XLSX, PNG, JPG, TXT (Maksimum 10MB setiap fail)</span>
+            </div>
+
+            <!-- Uploaded Files Badges -->
+            <div id="uploadedFilesList" class="mt-3 flex flex-wrap gap-2">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- 2. DYNAMIC SUMMARY AREA (ABOVE THE RESULTS) -->
+      <section id="dynamicSummarySection" class="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white rounded-2xl border border-slate-800 shadow-xl p-6 sm:p-7 relative overflow-hidden">
+        <!-- Top Colored Line -->
+        <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500 absolute top-0 left-0"></div>
+
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-800">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
+                Pengesahan Dinamik (Dynamic Summary)
+              </span>
+              <span class="text-[11px] text-slate-400 flex items-center space-x-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Kemaskini Secara Langsung</span>
+              </span>
+            </div>
+            <h3 class="text-base sm:text-lg font-bold text-white mt-1">Penyemakan & Pengesahan Sebelum Penyerahan Rasmi</h3>
+            <p class="text-xs text-slate-400">Sila sahkan maklumat berformat, unjuran varians, dan lampiran fail di bawah kelihatan tepat sebelum dihantar ke Firestore.</p>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <span class="text-[11px] text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+              Sasaran: <strong class="text-emerald-400 font-mono">Firestore DB</strong>
+            </span>
+          </div>
+        </div>
+
+        <!-- Dynamic Reformatted Content -->
+        <div class="mt-5 space-y-4">
+          <!-- Project Identity Row -->
+          <div class="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span id="summaryCode" class="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                  PRJ-KPSTI-2026-XXX
+                </span>
+                <span id="summaryStatus" class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                  Dalam Pelaksanaan
+                </span>
+              </div>
+              <h4 id="summaryTitle" class="text-base sm:text-lg font-bold text-white mt-1.5">Tajuk Projek Belum Dinyatakan</h4>
+              <div class="text-xs text-slate-300 mt-1 flex flex-wrap items-center gap-2">
+                <span id="summaryDept">Bahagian Inovasi dan Digital (BID)</span>
+                <span>&bull;</span>
+                <span id="summaryOfficer">Pegawai: Belum Ditugaskan</span>
+                <span>&bull;</span>
+                <span id="summaryDates" class="font-mono text-slate-400 text-[11px]">Tarikh: Belum Ditentukan</span>
+              </div>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-slate-700 w-full sm:w-auto sm:min-w-[180px]">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Kemajuan Fizikal:</span>
+                <span id="summaryProgressText" class="font-mono font-bold text-emerald-400">0%</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="summaryProgressBar" class="bg-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reformatted Financial Grid (4 Columns) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/80">
+              <span class="text-[11px] text-slate-400 block font-medium">Siling Keseluruhan (RM):</span>
+              <div id="summaryCeiling" class="text-sm sm:text-base font-bold font-mono text-white mt-0.5">RM 0.00</div>
+            </div>
+            <div class="bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/80">
+              <span class="text-[11px] text-slate-400 block font-medium">Peruntukan Tahunan (RM):</span>
+              <div id="summaryAllocation" class="text-sm sm:text-base font-bold font-mono text-blue-400 mt-0.5">RM 0.00</div>
+            </div>
+            <div class="bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/80">
+              <span class="text-[11px] text-slate-400 block font-medium">Belanja Sebenar (RM):</span>
+              <div id="summaryActual" class="text-sm sm:text-base font-bold font-mono text-emerald-400 mt-0.5">RM 0.00</div>
+            </div>
+            <div class="bg-slate-800/70 p-3.5 rounded-xl border border-slate-700/80">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400 block font-medium">Varians & Penyerapan:</span>
+                <span id="summaryVarianceTag" class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">Normal</span>
+              </div>
+              <div class="text-sm sm:text-base font-bold font-mono text-slate-200 mt-0.5">
+                <span id="summaryVariance">+RM 0.00</span> 
+                <span class="text-xs text-slate-400 font-normal">(<span id="summaryUtil">0.0%</span>)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues & Attached Files Summary -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-700/60">
+              <span class="text-[11px] text-slate-400 font-semibold block mb-1">Isu Semasa & Mitigasi:</span>
+              <div id="summaryIssues" class="text-slate-300 italic">Tiada isu dilaporkan.</div>
+            </div>
+            <div class="bg-slate-800/40 p-3 rounded-lg border border-slate-700/60">
+              <span class="text-[11px] text-slate-400 font-semibold block mb-1">Dokumen Dilampirkan:</span>
+              <div id="summaryFilesList" class="flex flex-wrap gap-1.5">
+                <span class="text-slate-400 italic">Tiada fail dilampirkan (Pilihan).</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmation Checkbox & Submit Action Bar -->
+          <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <label class="flex items-start space-x-2 cursor-pointer text-xs text-slate-300 max-w-xl">
+              <input type="checkbox" id="portalConfirmCheckbox" class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400 bg-slate-800 border-slate-600">
+              <span>Saya mengesahkan dengan penuh integriti bahawa maklumat perbelanjaan, varians dan dokumen yang dilampirkan di atas adalah tepat sebelum direkodkan ke Firestore.</span>
+            </label>
+
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
+              <button type="button" onclick="resetFormPortal()" class="px-4 py-2.5 text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition text-center">
+                Set Semula
+              </button>
+              <button type="button" onclick="submitProjectFromPortal()" id="btnSubmitPortal" class="px-5 py-2.5 text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg flex items-center justify-center space-x-2 transition focus:ring-2 focus:ring-emerald-400">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span id="btnSubmitPortalText">Hantar & Rekodkan Penyerahan ke Firestore</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. OUTPUT PORTAL (RESULTS & SENARAI REKOD PROJEK) -->
+      <section id="outputPortalSection" class="flex flex-col gap-6">
+        
+        <!-- GEMINI ENTERPRISE INTERACTIVE CHAT INTERFACE -->
+        <div id="geminiChatInterface" class="bg-white rounded-2xl border border-indigo-200/90 shadow-md overflow-hidden flex flex-col transition-all">
+          
+          <!-- Chat Header Bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-5 border-b border-indigo-100 bg-gradient-to-r from-slate-50 via-white to-indigo-50/40">
+            <div class="flex items-center space-x-3">
+              <div class="p-2.5 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 text-white rounded-xl shadow-sm flex-shrink-0">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="flex items-center flex-wrap gap-1.5">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wide">
+                    Ejen Gemini Enterprise
+                  </span>
+                  <span id="geminiAgentStatusBadge" class="inline-flex items-center space-x-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span id="geminiAgentStatusText">Sedia</span>
+                  </span>
+                  <span class="inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full hidden sm:inline-flex">
+                    <i data-lucide="shield-check" class="w-3 h-3 text-emerald-600"></i>
+                    <span>Log Audit Firestore</span>
+                  </span>
+                </div>
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-0.5">Soalan / Pertanyaan kepada Ejen Gemini Enterprise</h3>
+                <p class="text-[11px] text-slate-500 hidden sm:block">Perbualan interaktif (multi-turn dialog) berkaitan pemantauan projek, peruntukan &amp; belanjawan KPSTI.</p>
+              </div>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center space-x-2 text-xs flex-shrink-0">
+              <button type="button" id="btnNewConversation" onclick="startNewChatConversation()" class="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg flex items-center space-x-1.5 transition cursor-pointer shadow-sm">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Perbualan Baharu</span>
+              </button>
+              <button type="button" onclick="clearCurrentChat()" title="Kosongkan paparan skrin" class="text-[11px] text-slate-400 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition cursor-pointer">
+                Kosongkan
+              </button>
+            </div>
+          </div>
+
+          <!-- Auto-scrolling Messages Container -->
+          <div id="chatMessagesContainer" class="h-[460px] sm:h-[500px] overflow-y-auto p-4 sm:p-6 space-y-4 bg-slate-50/40 relative">
+            
+            <!-- Dynamic Messages List -->
+            <div id="chatMessagesList" class="space-y-4">
+              <!-- Rendered via renderChatMessages() in app.ts -->
+            </div>
+
+            <!-- Inline Typing Indicator & Live Streaming State -->
+            <div id="chatInlineStreamingState" class="hidden flex items-start space-x-3 max-w-[95%] sm:max-w-[88%]">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-sm flex-shrink-0 mt-1">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-grow bg-white border border-indigo-200 rounded-2xl rounded-tl-sm p-4 sm:p-5 shadow-sm space-y-3 relative overflow-hidden">
+                <!-- Top Status & Progress Bar -->
+                <div class="space-y-2 border-b border-slate-100 pb-2.5">
+                  <div class="flex items-center justify-between text-xs font-semibold">
+                    <div class="flex items-center space-x-2 text-indigo-900">
+                      <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                      </span>
+                      <span id="chatStreamingLabel" class="font-bold">Ejen sedang menganalisis...</span>
+                      <span id="chatStreamingPhaseLabel" class="text-[11px] text-slate-500 font-normal hidden sm:inline-block">· Menganalisis pertanyaan &amp; konteks</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <span id="chatStreamingProgressPercent" class="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">15%</span>
+                      <span class="font-mono text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 hidden sm:inline-block">streamAssist: AKTIF</span>
+                    </div>
+                  </div>
+                  <!-- Visual Progress Bar -->
+                  <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div id="chatStreamingProgressBar" class="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-full transition-all duration-300" style="width: 15%"></div>
+                  </div>
+                </div>
+
+                <!-- Progressive Line-by-Line Reasoning Stepper -->
+                <div id="chatStreamingReasoningSection" class="space-y-2">
+                  <div class="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                    <span class="flex items-center space-x-1.5">
+                      <i data-lucide="brain-circuit" class="w-3.5 h-3.5 text-indigo-600"></i>
+                      <span>Langkah Pemikiran Ejen (Reasoning Steps):</span>
+                    </span>
+                    <span id="chatStreamingStepCountBadge" class="text-[10px] font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 font-semibold">
+                      Menyambung...
+                    </span>
+                  </div>
+
+                  <!-- Container where line-by-line steps are dynamically rendered -->
+                  <div id="chatStreamingStepsList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1 text-xs">
+                    <div class="flex items-start space-x-2 p-2 rounded-lg bg-indigo-50/50 border border-indigo-100/80 text-indigo-900 animate-pulse">
+                      <span class="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</span>
+                      <div class="text-[11px] leading-relaxed">
+                        <span class="font-semibold">Menganalisis parameter pertanyaan &amp; konteks...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Live Stream Answer Preview (unfolds when answer starts arriving) -->
+                <div id="chatStreamingAnswerPreviewContainer" class="hidden pt-3 border-t border-slate-100 space-y-1.5">
+                  <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800">
+                    <span class="flex items-center space-x-1.5">
+                      <i data-lucide="message-square-text" class="w-3.5 h-3.5 text-emerald-600"></i>
+                      <span>Draf Maklum Balas Terkini (Masa Nyata):</span>
+                    </span>
+                    <span class="text-[10px] text-emerald-700 font-normal bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">Menjana Teks...</span>
+                  </div>
+                  <div id="chatStreamingAnswerLiveText" class="text-xs text-slate-800 leading-relaxed bg-slate-50/80 p-3 rounded-xl border border-slate-200 max-h-48 overflow-y-auto font-sans">
+                  </div>
+                </div>
+
+                <!-- Hidden fallback buffer for backward compatibility -->
+                <div id="chatStreamingTextBuffer" class="hidden"></div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                  <div class="flex items-center space-x-1.5">
+                    <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce delay-100"></span>
+                    <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce delay-200"></span>
+                    <span class="text-[10px] italic text-slate-500">Penstriman data masa nyata sedang berlangsung</span>
+                  </div>
+                  <span id="chatStreamingElapsedTimer" class="font-mono text-[10px] text-slate-400">0.0s</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error State: Token Expired -->
+            <div id="chatTokenExpiredAlert" class="hidden p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 shadow-sm">
+              <div class="flex items-start space-x-3">
+                <div class="p-2 bg-rose-100 text-rose-700 rounded-lg flex-shrink-0 mt-0.5">
+                  <i data-lucide="key-round" class="w-4 h-4"></i>
+                </div>
+                <div class="space-y-1.5 flex-grow text-xs">
+                  <h4 class="font-bold text-rose-800">
+                    Your access token has expired — ask your facilitator for a new one.
+                  </h4>
+                  <p class="text-[11px] text-rose-700 leading-relaxed">
+                    Sistem gagal memperbaharui akses OAuth daripada Google Token Endpoint. Sila hubungi fasilitator anda untuk mengemaskini Secrets.
+                  </p>
+                  <button type="button" onclick="retryLastUserMessage()" class="mt-1 px-3 py-1.5 text-xs font-semibold bg-rose-700 hover:bg-rose-800 text-white rounded-lg shadow-sm inline-flex items-center space-x-1.5 transition cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                    <span>Cuba Semula</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error State: No Response Generated -->
+            <div id="chatNoResponseAlert" class="hidden p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 shadow-sm">
+              <div class="flex items-start space-x-3">
+                <div class="p-2 bg-amber-100 text-amber-700 rounded-lg flex-shrink-0 mt-0.5">
+                  <i data-lucide="help-circle" class="w-4 h-4"></i>
+                </div>
+                <div class="space-y-1 text-xs">
+                  <h4 class="font-bold text-amber-900">
+                    No response was generated. Try rephrasing your question.
+                  </h4>
+                  <p class="text-[11px] text-amber-800">
+                    Ejen tidak menghasilkan sebarang kandungan bagi soalan yang dihantar. Sila cuba gunakan soalan atau perkataan yang lebih spesifik.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Chat Input Bar -->
+          <div id="chatInputBar" class="p-3.5 sm:p-4 bg-white border-t border-slate-200 relative">
+            
+            <!-- Drag & Drop Overlay for Chat -->
+            <div id="chatDropZoneOverlay" class="hidden absolute inset-0 z-30 bg-indigo-50/95 border-2 border-dashed border-indigo-500 rounded-2xl flex flex-col items-center justify-center text-indigo-700 pointer-events-none transition-all">
+              <i data-lucide="upload-cloud" class="w-8 h-8 mb-1 animate-bounce text-indigo-600"></i>
+              <span class="text-xs font-bold">Drop or choose file to upload</span>
+              <span class="text-[11px] text-indigo-500 mt-0.5">Attach meeting minutes, project briefs, or spreadsheets for Gemini Enterprise</span>
+            </div>
+
+            <!-- Quick Suggestions Prompt Chips -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-2.5 scrollbar-none text-[11px]">
+              <span class="text-slate-400 text-[10px] font-semibold flex items-center space-x-1 flex-shrink-0">
+                <i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i>
+                <span>Cadangan:</span>
+              </span>
+              <button type="button" onclick="selectQuickPrompt('Apakah status pelaksanaan projek di bawah KPSTI terkini?')" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-600 transition whitespace-nowrap cursor-pointer">
+                Status Projek KPSTI
+              </button>
+              <button type="button" onclick="selectQuickPrompt('Berapakah baki peruntukan tahun 2026 dan status perbelanjaan sebenar?')" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-600 transition whitespace-nowrap cursor-pointer">
+                Baki Peruntukan 2026
+              </button>
+              <button type="button" onclick="selectQuickPrompt('Senaraikan projek yang mengalami kelewatan atau isu kritikal.')" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-600 transition whitespace-nowrap cursor-pointer">
+                Projek Tertangguh / Lewat
+              </button>
+              <button type="button" onclick="selectQuickPrompt('Sediakan rumusan eksekutif varians bajet projek untuk pembentangan.')" class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-600 transition whitespace-nowrap cursor-pointer">
+                Analisis Varians Belanjawan
+              </button>
+            </div>
+
+            <!-- Attached Files Preview Strip -->
+            <div id="chatAttachedFilesContainer" class="hidden mb-2.5 p-2.5 bg-indigo-50/60 border border-indigo-200/80 rounded-xl space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-1.5 text-indigo-900 font-bold">
+                  <i data-lucide="paperclip" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  <span id="chatAttachedFilesLabel">Dokumen Lampiran Konteks (0 fail)</span>
+                </div>
+                <button type="button" onclick="clearChatAttachments()" class="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition cursor-pointer hover:underline">
+                  Kosongkan Lampiran
+                </button>
+              </div>
+              <div id="chatAttachedFilesList" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Text Area, Attachment Button and Send Button Row -->
+            <div class="flex items-end space-x-2">
+              <!-- Attachment Button -->
+              <input
+                type="file"
+                id="chatFileInput"
+                multiple
+                accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt,.json,.md,.png,.jpg,.jpeg"
+                onchange="handleChatFilesSelected(event)"
+                class="hidden"
+              />
+              <button
+                type="button"
+                id="btnChatAttach"
+                onclick="triggerChatFileUpload()"
+                title="Lampirkan fail dokumen sokongan (PDF, Excel, Word, CSV, Teks, Imej)"
+                class="p-2.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 active:scale-95 rounded-xl border border-slate-300 hover:border-indigo-300 transition cursor-pointer flex-shrink-0 flex items-center justify-center h-[44px] w-[44px]"
+                aria-label="Lampirkan fail dokumen"
+              >
+                <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </button>
+
+              <div class="flex-grow relative">
+                <textarea
+                  id="chatInputText"
+                  rows="2"
+                  placeholder="Taip soalan atau lampirkan fail untuk Ejen Gemini Enterprise... (Tekan Enter untuk hantar)"
+                  class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:outline-none bg-slate-50/50 hover:bg-white focus:bg-white text-slate-900 shadow-inner resize-none transition"
+                  onkeydown="handleChatInputKeydown(event)"
+                ></textarea>
+              </div>
+
+              <button
+                type="button"
+                id="btnSendChat"
+                onclick="submitChatMessage()"
+                class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-sm hover:shadow flex items-center justify-center space-x-2 transition cursor-pointer flex-shrink-0 h-[44px]"
+              >
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Hantar</span>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between mt-2 pt-1 text-[10px] text-slate-400">
+              <div class="flex items-center space-x-1.5 truncate pr-2">
+                <i data-lucide="info" class="w-3 h-3 text-indigo-500 flex-shrink-0"></i>
+                <span class="truncate">Disambungkan ke Discovery Engine Enterprise Agent · Menyokong teks &amp; lampiran fail konteks.</span>
+              </div>
+              <span id="chatCharCount" class="font-mono flex-shrink-0">0 aksara</span>
+            </div>
+
+          </div>
+
+          <!-- Hidden compatibility stubs for existing scripts -->
+          <div id="geminiResultsContainer" class="hidden">
+            <div id="geminiInitialPlaceholder" class="hidden"></div>
+            <div id="geminiStreamingState" class="hidden"><div id="geminiStreamingText"></div></div>
+            <div id="geminiAnswerState" class="hidden">
+              <span id="geminiRecordedQuestion"></span>
+              <div id="geminiMarkdownOutput"></div>
+              <span id="geminiAnswerTimestamp"></span>
+            </div>
+            <div id="geminiTokenExpiredAlert" class="hidden"></div>
+            <div id="geminiNoResponseAlert" class="hidden"></div>
+          </div>
+
+        </div>
+
+        <!-- Quick KPI Summary Strip -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Peruntukan 2026</span>
+              <div class="text-lg sm:text-xl font-bold font-mono text-slate-900 mt-0.5" id="statAnnualAllocation">RM 0.00</div>
+              <span class="text-[10px] text-slate-400">Siling: <span id="statCeilingTotal" class="font-mono">RM 0.00</span></span>
+            </div>
+            <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+              <i data-lucide="wallet" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Belanja Sebenar</span>
+              <div class="text-lg sm:text-xl font-bold font-mono text-emerald-700 mt-0.5" id="statActualSpend">RM 0.00</div>
+              <span class="text-[10px] text-slate-400">Unjuran: <span id="statProjectedSpend" class="font-mono">RM 0.00</span></span>
+            </div>
+            <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg">
+              <i data-lucide="receipt" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Varians Perbelanjaan</span>
+              <div class="text-lg sm:text-xl font-bold font-mono text-slate-900 mt-0.5" id="statVarianceTotal">RM 0.00</div>
+              <span class="text-[10px] text-slate-400">Penggunaan: <strong id="statUtilizationRate" class="text-emerald-700">0.0%</strong></span>
+            </div>
+            <div class="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+              <i data-lucide="scale" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Projek Kritis / Lewat</span>
+              <div class="text-lg sm:text-xl font-bold font-mono text-rose-600 mt-0.5" id="statDelayedProjects">0</div>
+              <span class="text-[10px] text-slate-400">Siap: <strong id="statCompletedProjects" class="text-emerald-700">0</strong></span>
+            </div>
+            <div class="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="relative flex-grow max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+            <input type="text" id="filterSearch" oninput="applyFilters()" placeholder="Cari tajuk, kod projek, atau pegawai..." class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-slate-50/50">
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filterDept" onchange="applyFilters()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="ALL">Semua Bahagian (6 Unit)</option>
+              <option value="Bahagian Pendidikan (BP)">Bahagian Pendidikan (BP)</option>
+              <option value="Bahagian Inovasi dan Digital (BID)">Bahagian Inovasi dan Digital (BID)</option>
+              <option value="Bahagian Infrastruktur ICT dan EGS (BIIE)">Bahagian Infrastruktur ICT dan EGS (BIIE)</option>
+              <option value="Bahagian TVET dan Pemantauan Projek (BTPP)">Bahagian TVET dan Pemantauan Projek (BTPP)</option>
+              <option value="Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)">Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)</option>
+              <option value="Bahagian Akaun (BA)">Bahagian Akaun (BA)</option>
+            </select>
+
+            <!-- Year Picker Filter -->
+            <select id="filterYear" onchange="applyFilters()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="ALL">Semua Tahun</option>
+              <option value="2026">Tahun 2026</option>
+              <option value="2025">Tahun 2025</option>
+              <option value="2024">Tahun 2024</option>
+              <option value="2023">Tahun 2023</option>
+              <option value="2027">Tahun 2027</option>
+              <option value="2028">Tahun 2028</option>
+              <option value="2029">Tahun 2029</option>
+              <option value="2030">Tahun 2030</option>
+            </select>
+
+            <select id="filterStatus" onchange="applyFilters()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-2 bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+              <option value="ALL">Semua Status</option>
+              <option value="Dalam Pelaksanaan">Dalam Pelaksanaan</option>
+              <option value="Tertangguh/Lewat">Tertangguh / Lewat</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Dalam Perancangan">Dalam Perancangan</option>
+            </select>
+
+            <button onclick="resetFilters()" class="px-2.5 py-2 text-xs text-slate-600 hover:text-slate-900 border border-slate-300 rounded-lg hover:bg-slate-50 flex items-center space-x-1" title="Set Semula Tapisan">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Set Semula</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Projects Results Table Card -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="table" class="w-4 h-4 text-slate-600"></i>
+              <h3 class="text-xs sm:text-sm font-bold text-slate-900">Senarai Projek &amp; Prestasi Terkini</h3>
+              <span id="badgeTotalProjects" class="bg-slate-200 text-slate-800 text-[11px] px-2 py-0.2 rounded-full font-bold">5</span>
+            </div>
+            <div class="text-[11px] text-slate-500">
+              Menunjukkan <strong id="lblCountShowing" class="text-slate-800">0</strong> daripada <strong id="lblCountTotal" class="text-slate-800">0</strong> projek
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full max-w-full">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-100/70 text-slate-700 border-b border-slate-200 font-semibold text-[11px] sm:text-xs uppercase tracking-wider">
+                  <th class="py-3 px-4">Kod &amp; Tajuk Projek</th>
+                  <th class="py-3 px-3">Bahagian &amp; Pegawai</th>
+                  <th class="py-3 px-3 text-right">Peruntukan (RM)</th>
+                  <th class="py-3 px-3 text-right">Belanja Sebenar (RM)</th>
+                  <th class="py-3 px-3 text-center">Penyerapan (%)</th>
+                  <th class="py-3 px-3 text-center">Kemajuan (%)</th>
+                  <th class="py-3 px-3 text-center">Status</th>
+                  <th class="py-3 px-4 text-center no-print">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="projectsTableBody" class="divide-y divide-slate-200">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyStateProjects" class="hidden p-10 text-center">
+            <i data-lucide="folder-search" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+            <p class="text-xs text-slate-600 font-semibold">Tiada projek ditemui padan dengan carian.</p>
+            <button onclick="resetFilters()" class="mt-2 text-xs text-emerald-700 hover:underline">Set semula penapis</button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ==================== PAGE: EXECUTIVE REPORTS & DATE FILTERING (MONTH / YEAR FILTER) ==================== -->
+    <div id="pageContentReports" class="hidden flex flex-col gap-6">
+      
+      <!-- Report Header Banner -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+              Modul Pelaporan Eksekutif &amp; Penapisan Tarikh
+            </span>
+            <span class="text-xs text-slate-400">&bull; e-Pantau KPSTI</span>
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-1">Laporan Prestasi Projek Mengikut Bulan &amp; Tahun</h2>
+          <p class="text-xs text-slate-500 mt-0.5 max-w-2xl">
+            Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI). Penapisan dinamik mengikut parameter Bulan dan Tahun bagi penyediaan laporan peruntukan belanjawan, kemajuan fizikal, dan varians pelaksanaan.
+          </p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="printExecutiveReport()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 flex items-center space-x-1.5 shadow-sm transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Cetak Laporan</span>
+          </button>
+          <button onclick="downloadExecutiveReportPDF()" class="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl flex items-center space-x-1.5 shadow-sm transition">
+            <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+            <span>Muat Turun PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Date & Parameter Filters Card -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="calendar-range" class="w-4 h-4 text-indigo-600"></i>
+            <h3 class="text-xs sm:text-sm font-bold text-slate-900">Parameter Penapisan Tarikh &amp; Bahagian</h3>
+          </div>
+          <span class="text-[11px] text-slate-500">Penapisan dinamik tarikh mula, tarikh tamat, dan tahun peruntukan</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- Month Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Bulan Pelaporan</label>
+            <select id="reportFilterMonth" onchange="applyReportDateFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:outline-none">
+              <option value="ALL">Semua Bulan (Keseluruhan Tahun)</option>
+              <option value="01">01 - Januari</option>
+              <option value="02">02 - Februari</option>
+              <option value="03">03 - Mac</option>
+              <option value="04">04 - April</option>
+              <option value="05">05 - Mei</option>
+              <option value="06">06 - Jun</option>
+              <option value="07">07 - Julai</option>
+              <option value="08">08 - Ogos</option>
+              <option value="09">09 - September</option>
+              <option value="10">10 - Oktober</option>
+              <option value="11">11 - November</option>
+              <option value="12">12 - Disember</option>
+            </select>
+          </div>
+
+          <!-- Year Picker Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Tahun Peruntukan (Year)</label>
+            <select id="reportFilterYear" onchange="applyReportDateFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:outline-none">
+              <option value="ALL">Semua Tahun</option>
+              <option value="2026" selected>2026 (Tahun Semasa)</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+              <option value="2030">2030</option>
+            </select>
+          </div>
+
+          <!-- Department Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Bahagian / Unit KPSTI</label>
+            <select id="reportFilterDept" onchange="applyReportDateFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:outline-none">
+              <option value="ALL">Semua Bahagian (6 Unit Rasmi)</option>
+              <option value="Bahagian Pendidikan (BP)">Bahagian Pendidikan (BP)</option>
+              <option value="Bahagian Inovasi dan Digital (BID)">Bahagian Inovasi dan Digital (BID)</option>
+              <option value="Bahagian Infrastruktur ICT dan EGS (BIIE)">Bahagian Infrastruktur ICT dan EGS (BIIE)</option>
+              <option value="Bahagian TVET dan Pemantauan Projek (BTPP)">Bahagian TVET dan Pemantauan Projek (BTPP)</option>
+              <option value="Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)">Bahagian Pengurusan Sumber Manusia dan Pentadbiran (BPSMP)</option>
+              <option value="Bahagian Akaun (BA)">Bahagian Akaun (BA)</option>
+            </select>
+          </div>
+
+          <!-- Status Filter -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Status Pelaksanaan</label>
+            <select id="reportFilterStatus" onchange="applyReportDateFilters()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs bg-white text-slate-800 font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:outline-none">
+              <option value="ALL">Semua Status</option>
+              <option value="Dalam Pelaksanaan">Dalam Pelaksanaan</option>
+              <option value="Tertangguh/Lewat">Tertangguh / Lewat</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Dalam Perancangan">Dalam Perancangan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <span id="reportFilterStatusLabel" class="text-xs text-slate-600 font-medium">
+            Memaparkan laporan bagi <strong>Tahun 2026</strong> (Semua Bulan)
+          </span>
+          <button onclick="resetReportDateFilters()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>Set Semula Parameter</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Financial Summary KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Bil. Projek Ditapis</span>
+          <div class="text-xl font-extrabold text-slate-900 mt-1" id="reportStatProjectCount">0</div>
+          <span class="text-[10px] text-slate-400">Termasuk dalam laporan</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Jumlah Peruntukan</span>
+          <div class="text-xl font-extrabold text-blue-700 font-mono mt-1" id="reportStatAllocation">RM 0.00</div>
+          <span class="text-[10px] text-slate-400">Bagi tempoh yang dipilih</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Belanja Sebenar</span>
+          <div class="text-xl font-extrabold text-emerald-700 font-mono mt-1" id="reportStatSpend">RM 0.00</div>
+          <span class="text-[10px] text-slate-400">Pembayaran disahkan</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Baki / Varians</span>
+          <div class="text-xl font-extrabold text-slate-800 font-mono mt-1" id="reportStatVariance">RM 0.00</div>
+          <span class="text-[10px] text-slate-400">Peruntukan tolak belanja</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Penyerapan &amp; Kemajuan</span>
+          <div class="text-xl font-extrabold text-indigo-700 font-mono mt-1" id="reportStatAbsorption">0.0%</div>
+          <span class="text-[10px] text-slate-400">Purata kemajuan: <strong id="reportStatProgress" class="text-slate-700">0%</strong></span>
+        </div>
+      </div>
+
+      <!-- Report Table Card -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-slate-600"></i>
+            <h3 class="text-xs sm:text-sm font-bold text-slate-900">Jadual Laporan Eksekutif Projek KPSTI</h3>
+          </div>
+          <span id="reportGeneratedTime" class="text-[11px] text-slate-500 font-mono">Tarikh: Hari ini</span>
+        </div>
+
+        <div class="overflow-x-auto w-full max-w-full">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200 font-semibold text-[11px] uppercase tracking-wider">
+                <th class="py-3 px-3 text-center">Bil</th>
+                <th class="py-3 px-3">Kod Projek</th>
+                <th class="py-3 px-4">Tajuk Projek &amp; Bahagian</th>
+                <th class="py-3 px-3 text-right">Peruntukan (RM)</th>
+                <th class="py-3 px-3 text-right">Belanja Sebenar (RM)</th>
+                <th class="py-3 px-3 text-center">Penyerapan (%)</th>
+                <th class="py-3 px-3 text-center">Kemajuan (%)</th>
+                <th class="py-3 px-3 text-center">Status</th>
+                <th class="py-3 px-3 text-center no-print">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="reportTableBody" class="divide-y divide-slate-200">
+              <!-- Dynamically populated by renderExecutiveReport() -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="emptyStateReport" class="hidden p-10 text-center">
+          <i data-lucide="calendar-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+          <p class="text-xs text-slate-600 font-semibold">Tiada rekod projek padan dengan parameter Bulan dan Tahun yang dipilih.</p>
+          <button onclick="resetReportDateFilters()" class="mt-2 text-xs text-indigo-600 hover:underline">Set semula parameter tarikh</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== PAGE 2: ANALYTICS ENGINE (REAL-TIME FIRESTORE CHARTS) ==================== -->
+    <div id="pageContentAnalytics" class="hidden flex flex-col gap-6">
+      
+      <!-- Top Banner with Database Connection / Validation Indicator -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+              Modul Analitik & Visualisasi Data
+            </span>
+            <span class="text-xs text-slate-400">&bull; e-Pantau KPSTI</span>
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-1">Analytics Engine</h2>
+          <p class="text-xs text-slate-500 mt-0.5 max-w-2xl">
+            Visualisasi tren entri secara langsung dari Cloud Firestore. Memaparkan trajektori penyerahan, pecahan kategori bahagian, dan penggunaan peruntukan belanjawan secara automatik.
+          </p>
+        </div>
+
+        <!-- Database Connection & Validation Indicator -->
+        <div id="dbConnectionIndicatorBox" class="bg-slate-900 text-slate-200 rounded-xl p-3.5 border border-slate-700 shadow-sm flex flex-col gap-2 w-full sm:w-auto sm:min-w-[300px]">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="relative flex h-2.5 w-2.5">
+                <span id="dbPingAnimation" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span id="dbStatusDot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <span id="dbConnectionStatusText" class="text-xs font-bold text-emerald-400 font-mono tracking-tight">LIVE FIRESTORE CONNECTED</span>
+            </div>
+            <span class="text-[10px] bg-slate-800 text-emerald-300 px-2 py-0.5 rounded font-mono border border-emerald-500/30">Data Sebenar</span>
+          </div>
+          
+          <div class="text-[11px] font-mono text-slate-300 flex flex-col gap-0.5 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+            <div class="truncate text-slate-400 text-[10px]" title="ai-studio-kpstiprojectmoni-2636f954-4a96-4966-86f2-f366e276ad54">
+              Pangkalan Data: <span class="text-slate-200 font-semibold">kpsti-projectmoni</span>
+            </div>
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="text-slate-400">Protokol: <span id="dbSyncProtocol" class="text-emerald-400 font-medium">onSnapshot (Masa Nyata)</span></span>
+              <span class="text-slate-400">Latensi: <span id="dbPingLatency" class="text-emerald-400 font-bold">12ms</span></span>
+            </div>
+            <div class="text-[10px] text-slate-400">
+              Disahkan: <span id="dbLastSyncTimestamp" class="text-slate-200 font-mono">Baru sahaja</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-slate-400 italic">Disahkan getDocFromServer</span>
+            <button onclick="pingDatabaseConnection()" id="btnPingDb" class="px-2.5 py-1 text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg flex items-center space-x-1.5 transition shadow-sm">
+              <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+              <span>Uji Sambungan</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Summary Cards Above the Charts -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        
+        <!-- Summary Card 1: Total Entries -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumlah Entri Pangkalan Data</span>
+            <div class="p-2 bg-slate-100 rounded-lg text-slate-800">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="flex items-baseline space-x-2">
+              <span id="cardAnalyticsTotalEntries" class="text-2xl sm:text-3xl font-extrabold text-slate-900">0</span>
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Rekod Terkumpul</span>
+            </div>
+            <p id="cardAnalyticsBreakdownText" class="text-xs text-slate-500 mt-1">
+              Membaca secara langsung daripada koleksi Firestore
+            </p>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+            <span id="cardAnalyticsProjectCount">0 Projek Berdaftar</span>
+            <span class="text-emerald-700 font-semibold flex items-center space-x-1">
+              <i data-lucide="database" class="w-3.5 h-3.5"></i>
+              <span>Firestore Live</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Summary Card 2: Entries This Week -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Penyerahan Minggu Ini</span>
+            <div class="p-2 bg-emerald-50 rounded-lg text-emerald-700">
+              <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="flex items-baseline space-x-2">
+              <span id="cardAnalyticsEntriesThisWeek" class="text-2xl sm:text-3xl font-extrabold text-emerald-700">0</span>
+              <span class="text-xs font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">Aktiviti 7 Hari</span>
+            </div>
+            <p id="cardAnalyticsWeekSubtext" class="text-xs text-slate-500 mt-1">
+              Penyerahan & kemas kini dalam 7 hari lepas
+            </p>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+            <span id="cardAnalyticsLastSubmissionDate">Penyerahan terakhir: Baru sahaja</span>
+            <span class="text-slate-500 font-mono">Garis Masa Aktif</span>
+          </div>
+        </div>
+
+        <!-- Summary Card 3: Financial Absorption & Rate -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between sm:col-span-2 lg:col-span-1 hover:border-slate-300 transition">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kadar Penyerapan Kewangan</span>
+            <div class="p-2 bg-blue-50 rounded-lg text-blue-700">
+              <i data-lucide="trending-up" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="flex items-baseline space-x-2">
+              <span id="cardAnalyticsUtilizationRate" class="text-2xl sm:text-3xl font-extrabold text-blue-900">0.0%</span>
+              <span id="cardAnalyticsUtilizationBadge" class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">Prestasi Sihat</span>
+            </div>
+            <p id="cardAnalyticsFinancialSubtext" class="text-xs text-slate-500 mt-1">
+              RM 0.00 dibelanjakan daripada peruntukan
+            </p>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+            <span id="cardAnalyticsActiveProjectsCount">0 projek berstatus aktif</span>
+            <span class="text-blue-700 font-semibold font-mono">Belanjawan 2026</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-Time Analytical Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Chart 1: Entries Over Time (2 cols on large screen) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between lg:col-span-2">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
+            <div>
+              <div class="flex items-center space-x-2">
+                <i data-lucide="line-chart" class="w-4 h-4 text-emerald-600"></i>
+                <h3 class="text-sm font-bold text-slate-900">Entri & Penyerahan Mengikut Garis Masa (Entries Over Time)</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Tren volum log penyerahan & pendaftaran projek mengikut tarikh rekod Firestore.</p>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                <span>Masa Nyata</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 relative w-full h-72">
+            <canvas id="analyticsTimelineChart"></canvas>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Menunjukkan taburan tarikh penyerahan bagi semua rekod Firestore.</span>
+            <span id="analyticsTimelineTotalLabel" class="font-semibold text-slate-700">0 entri dipetakan</span>
+          </div>
+        </div>
+
+        <!-- Chart 2: Breakdown by Category (Department) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+          <div class="pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+              <h3 class="text-sm font-bold text-slate-900">Pecahan Mengikut Kategori (Bahagian)</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Taburan entri projek mengikut bahagian kementerian.</p>
+          </div>
+
+          <div class="mt-4 relative w-full h-64 flex items-center justify-center">
+            <canvas id="analyticsCategoryChart"></canvas>
+          </div>
+
+          <div id="analyticsCategoryLegend" class="mt-3 pt-2.5 border-t border-slate-100 space-y-1 text-xs text-slate-600 max-h-24 overflow-y-auto">
+            <!-- Dynamic Legend List -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Secondary Chart Row: Financial Comparison by Department & Status Breakdown -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Chart 3: Financial Allocation vs Actual Spend by Category (2 cols) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between lg:col-span-2">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
+            <div>
+              <div class="flex items-center space-x-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-slate-700"></i>
+                <h3 class="text-sm font-bold text-slate-900">Perbandingan Peruntukan vs Belanja Sebenar Mengikut Bahagian</h3>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">Analisis peruntukan tahunan (RM) berbanding belanja sebenar bagi setiap bahagian.</p>
+            </div>
+            <div class="text-[11px] text-slate-500 font-mono">
+              Sumber: <strong class="text-slate-800">Firestore Projects</strong>
+            </div>
+          </div>
+
+          <div class="mt-4 relative w-full h-72">
+            <canvas id="analyticsDeptFinancialChart"></canvas>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Visualisasi bar berganda untuk pemantauan varians belanjawan.</span>
+            <span class="text-emerald-700 font-semibold font-mono">Ketepatan Kewangan KPSTI</span>
+          </div>
+        </div>
+
+        <!-- Chart 4: Status Distribution Breakdown -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+          <div class="pb-3 border-b border-slate-100">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+              <h3 class="text-sm font-bold text-slate-900">Taburan Status Pelaksanaan</h3>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Status kemajuan semasa projek di bawah KPSTI.</p>
+          </div>
+
+          <div class="mt-4 relative w-full h-64 flex items-center justify-center">
+            <canvas id="analyticsStatusChart"></canvas>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+            <span id="analyticsStatusSummaryText">0 Projek Dipantau</span>
+            <span class="text-slate-400 text-[10px]">Data Masa Nyata</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==================== PAGE 3: AUDIT TRAIL (INPUT-OUTPUT LOGS PULLED FROM FIRESTORE) ==================== -->
+    <div id="pageContentAudit" class="hidden flex flex-col gap-6">
+      
+      <!-- Top Banner with Firestore Stream Indicator -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+              Modul Pematuhan &amp; Integriti
+            </span>
+            <span class="text-xs text-slate-400">&bull; Cloud Firestore Audit Interface</span>
+          </div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-1">Audit Trail &amp; Kitaran Input-Output</h2>
+          <p class="text-xs text-slate-500 mt-0.5 max-w-2xl">
+            Dedicated historical log of every input-output cycle pulled directly from Firestore. Memaparkan cap masa pelayan, ringkasan kitaran data, dan pilihan melihat rekod penuh mengikut susunan terkini (newest first) untuk tujuan penyahpepijatan dan audit.
+          </p>
+        </div>
+
+        <!-- Real-Time Stream Status Chip & Quick Actions -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div class="flex items-center space-x-2 bg-slate-900 text-slate-200 px-3.5 py-2 rounded-xl text-xs border border-slate-800 font-mono">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Firestore Stream: <strong id="auditLiveBadge" class="text-emerald-400">Aktif</strong></span>
+            <span class="text-slate-600">|</span>
+            <span class="text-slate-300"><span id="auditTotalCyclesHeaderCount" class="font-bold text-white">0</span> Kitaran</span>
+          </div>
+
+          <button onclick="switchPage('core'); openProjectModal();" class="px-3.5 py-2 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-sm flex items-center space-x-1.5 transition">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Hantar Rekod Baharu</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Ribbon -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Jumlah Kitaran</div>
+            <div id="auditMetricTotal" class="text-xl font-extrabold text-slate-900 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-slate-100 rounded-lg text-slate-700">
+            <i data-lucide="database" class="w-4 h-4"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-emerald-600 tracking-wider">Pendaftaran Baharu</div>
+            <div id="auditMetricCreate" class="text-xl font-extrabold text-emerald-700 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-emerald-50 rounded-lg text-emerald-700">
+            <i data-lucide="folder-plus" class="w-4 h-4"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-blue-600 tracking-wider">Kemas Kini Data</div>
+            <div id="auditMetricUpdate" class="text-xl font-extrabold text-blue-700 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-blue-50 rounded-lg text-blue-700">
+            <i data-lucide="edit" class="w-4 h-4"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Pengesahan HITL</div>
+            <div id="auditMetricHitl" class="text-xl font-extrabold text-purple-700 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-purple-50 rounded-lg text-purple-700">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search, Filter & Audit Toolbar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex-grow flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <!-- Search Bar -->
+          <div class="relative flex-grow">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="auditSearchInput" oninput="filterAuditTrail()" placeholder="Cari ikut ID Projek, pegawai, tajuk atau kata kunci payload..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 focus:outline-none focus:bg-white transition">
+          </div>
+
+          <!-- Type Filter -->
+          <div class="flex items-center space-x-2">
+            <select id="auditTypeFilter" onchange="filterAuditTrail()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-600 focus:outline-none">
+              <option value="ALL">Semua Kitaran Input-Output</option>
+              <option value="CREATE_PROJECT">Daftar Projek (CREATE)</option>
+              <option value="UPDATE_PROJECT">Kemas Kini (UPDATE)</option>
+              <option value="VERIFICATION_APPROVAL">Pengesahan Rasmi (HITL)</option>
+              <option value="STATUS_UPDATE">Tindakan Status / Padam</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 justify-end text-xs text-slate-500 font-mono">
+          <span>Susunan:</span>
+          <span class="font-bold text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200 flex items-center space-x-1">
+            <i data-lucide="arrow-down-wide-narrow" class="w-3.5 h-3.5 text-purple-600"></i>
+            <span>Terkini Dahulu (Newest First)</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Historical Log Feed / Records Container -->
+      <div id="auditLogFeedContainer" class="flex flex-col gap-3">
+        <!-- Rendered dynamically by renderAuditTrailPage() -->
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MODAL: VIEW PROJECT DETAILS & AUDIT LOG -->
+  <div id="projectDetailsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full border border-slate-200 max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800">
+        <div>
+          <span id="viewPrjCode" class="text-xs font-mono text-emerald-400">PRJ-KPSTI-2026-XXX</span>
+          <h3 id="viewPrjTitle" class="text-base font-bold text-white">Butiran Projek</h3>
+        </div>
+        <button onclick="closeDetailsModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-grow flex flex-col gap-4 text-xs sm:text-sm" id="viewPrjContent">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+        <button id="btnEditFromDetails" class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 px-3.5 py-1.5 rounded-lg hover:bg-slate-50 flex items-center space-x-1.5 shadow-sm transition">
+          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+          <span>Kemaskini Projek</span>
+        </button>
+        <button onclick="closeDetailsModal()" class="text-xs font-semibold bg-slate-900 text-white px-4 py-1.5 rounded-lg hover:bg-slate-800 transition shadow-sm">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HUMAN-IN-THE-LOOP (HITL) VERIFICATION & APPROVAL -->
+  <div id="verificationModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-emerald-500 flex flex-col overflow-hidden">
+      
+      <!-- Verification Header -->
+      <div class="bg-emerald-800 text-white px-5 py-3.5 flex items-center space-x-3">
+        <div class="p-2 bg-emerald-700 rounded-xl">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-emerald-200"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold">Pengesahan Rasmi & Kelulusan Manusia (HITL)</h3>
+          <p class="text-[11px] text-emerald-200">Safeguard Integriti Data & Pemutus Kuasa Kerajaan</p>
+        </div>
+      </div>
+
+      <!-- Verification Body -->
+      <div class="p-5 text-xs text-slate-700 space-y-3">
+        <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-xl text-amber-950 text-[11px] leading-relaxed">
+          <strong>Perakuan Integriti:</strong> Tindakan ini akan mengunci status data atau menjana perakuan rasmi untuk tindakan kementerian. Sila semak ketepatan angka varians, baki peruntukan, dan justifikasi sebelum meneruskan.
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Peranan & Pegawai Pengesah:</label>
+          <div class="bg-slate-100 p-2.5 rounded-lg font-mono text-slate-800 text-[11px] flex items-center justify-between">
+            <span id="hitlOfficerName">Datuk Dr. Haji Mohd Nor (Setiausaha Tetap)</span>
+            <span class="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-md text-[10px]">Sah</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-800 mb-1">Catatan Perakuan / Justifikasi Kelulusan:</label>
+          <textarea id="hitlRemarks" rows="2" placeholder="Masukkan ulasan atau perakuan pematuhan..." class="w-full border border-slate-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 focus:outline-none"></textarea>
+        </div>
+
+        <label class="flex items-start space-x-2 pt-1 cursor-pointer">
+          <input type="checkbox" id="hitlConsentCheckbox" class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="text-[11px] text-slate-600">
+            Saya mengesahkan bahawa semua maklumat yang dimasukkan adalah tepat, sahih, dan mematuhi Tatacara Pengurusan Kewangan KPSTI.
+          </span>
+        </label>
+      </div>
+
+      <!-- Verification Footer -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-end space-x-2">
+        <button onclick="closeVerificationModal()" class="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition">
+          Batal
+        </button>
+        <button onclick="executeVerificationApproval()" class="px-4 py-1.5 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Sahkan & Luluskan Secara Rasmi</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: DOCUMENT EXTRACTION & MINUTES TRANSCRIPTION (GEMINI ENTERPRISE OCR) -->
+  <div id="documentExtractModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-200 max-h-[94vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 bg-blue-950 text-blue-300 rounded-xl border border-blue-800/60">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-900/80 text-blue-200 border border-blue-700">
+                PENGECAMAN DOKUMEN &amp; MINIT MESYUARAT AI
+              </span>
+              <span class="text-xs font-mono text-slate-400">Gemini OCR Enterprise</span>
+            </div>
+            <h3 class="text-base font-bold text-white mt-0.5">Ekstrak Data Projek Daripada Minit Mesyuarat / Kertas Kerja</h3>
+          </div>
+        </div>
+        <button onclick="closeDocumentExtractionModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto flex-grow flex flex-col gap-4 text-xs">
+        
+        <p class="text-slate-600 leading-relaxed">
+          Muat naik dokumen rasmi seperti <strong>Minit Mesyuarat Penyelarasan, Kertas Cadangan Projek, Laporan Prestasi Kemajuan, atau Surat Kelulusan Peruntukan</strong>. Ejen AI KPSTI akan mengekstrak tajuk projek, bahagian yang terlibat, siling peruntukan, perbelanjaan, kemajuan fizikal, serta senarai isu secara automatik.
+        </p>
+
+        <!-- Dropzone inside modal -->
+        <div id="modalExtractDropzone" class="border-2 border-dashed border-blue-300 bg-blue-50/40 rounded-xl p-6 text-center hover:bg-blue-50/80 transition cursor-pointer flex flex-col items-center justify-center gap-2">
+          <input type="file" id="modalExtractFileInput" accept=".pdf,.doc,.docx,.xlsx,.xls,.txt,.png,.jpg,.jpeg" class="hidden" onchange="handleModalFileSelect(event)">
+          <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+          </div>
+          <div class="font-bold text-slate-800 text-sm">Drop or choose file to upload</div>
+          <div class="text-[11px] text-slate-500">Menyokong PDF, Minit Mesyuarat Word (DOCX), Excel, TXT, dan Imej Dokumen (maks. 15MB)</div>
+        </div>
+
+        <!-- Sample Minutes Selector for Quick Test -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+          <div class="text-[11px] text-slate-700">
+            <span class="font-semibold text-slate-900 block">Atau pilih contoh dokumen rasmi KPSTI untuk demonstrasi:</span>
+            <span>Uji kemampuan pemprosesan minit mesyuarat secara langsung tanpa memuat naik fail fizikal.</span>
+          </div>
+          <button type="button" onclick="loadSampleMeetingMinutes()" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold shadow-sm transition flex-shrink-0">
+            Muat Contoh Minit
+          </button>
+        </div>
+
+        <!-- Document Text Preview / Input -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="font-bold text-slate-800">Teks Dokumen / Transkripsi Minit Mesyuarat:</label>
+            <span id="docCharCount" class="text-[11px] text-slate-400 font-mono">0 aksara</span>
+          </div>
+          <textarea id="modalExtractText" rows="6" placeholder="Kandungan teks minit mesyuarat atau dokumen akan dipaparkan di sini... Anda juga boleh menampal (paste) teks minit mesyuarat secara terus." class="w-full border border-slate-300 rounded-xl p-3 text-xs font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:outline-none bg-slate-50/50"></textarea>
+        </div>
+
+        <!-- Extraction Progress Indicator -->
+        <div id="extractLoadingIndicator" class="hidden p-4 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center space-x-3">
+          <div class="animate-spin text-indigo-600">
+            <i data-lucide="loader-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="font-bold text-indigo-900 text-xs">Sedang Menganalisis Dokumen dengan Ejen Gemini Enterprise...</div>
+            <div class="text-[11px] text-indigo-700">Mengekstrak entiti projek, kewangan, bahagian KPSTI, dan indikator kemajuan.</div>
+          </div>
+        </div>
+
+        <!-- Extracted Fields Preview Card -->
+        <div id="extractedResultsContainer" class="hidden bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="p-1 bg-emerald-600 text-white rounded">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              </span>
+              <span class="font-bold text-emerald-950 text-xs">Entiti Berjaya Diekstrak Daripada Dokumen:</span>
+            </div>
+            <span class="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">Keyakinan: 98.4%</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div class="bg-white p-2.5 rounded-lg border border-emerald-100">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">Tajuk Projek</span>
+              <span id="resExtractedTitle" class="font-semibold text-slate-900">-</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-emerald-100">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">Bahagian &amp; Tahun</span>
+              <span id="resExtractedDept" class="font-semibold text-slate-900">-</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-emerald-100">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">Peruntukan Kewangan</span>
+              <span id="resExtractedBudget" class="font-mono font-semibold text-blue-700">-</span>
+            </div>
+            <div class="bg-white p-2.5 rounded-lg border border-emerald-100">
+              <span class="text-[10px] font-bold text-slate-500 uppercase block">Kemajuan &amp; Status</span>
+              <span id="resExtractedStatus" class="font-semibold text-emerald-700">-</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="closeDocumentExtractionModal()" class="text-xs font-semibold text-slate-600 hover:text-slate-800 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition">
+          Batal
+        </button>
+        <div class="flex items-center space-x-2">
+          <button id="btnRunExtractAi" onclick="runDocumentAiExtraction()" class="text-xs font-semibold bg-blue-700 text-white px-4 py-1.5 rounded-lg hover:bg-blue-800 transition shadow-sm flex items-center space-x-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Analisis &amp; Ekstrak Data</span>
+          </button>
+          <button id="btnApplyExtractedToForm" onclick="applyExtractedDataToForm()" disabled class="text-xs font-semibold bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded-lg hover:bg-emerald-800 transition shadow-sm flex items-center space-x-1.5">
+            <i data-lucide="arrow-down-to-dot" class="w-3.5 h-3.5"></i>
+            <span>Isi Borang Projek</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AUDIT RECORD INSPECTOR (FULL INPUT-OUTPUT RECORD & DEBUGGER) -->
+  <div id="auditRecordModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-slate-200 max-h-[92vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="bg-slate-900 text-white px-5 py-4 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 bg-purple-950 text-purple-300 rounded-xl border border-purple-800/60">
+            <i data-lucide="file-search" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span id="auditModalBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-900/80 text-purple-200 border border-purple-700">
+                INPUT-OUTPUT RECORD
+              </span>
+              <span id="auditModalDocIdShort" class="text-xs font-mono text-slate-400">ID: ...</span>
+            </div>
+            <h3 id="auditModalTitle" class="text-base font-bold text-white mt-0.5">Pemeriksa Rekod Audit Lengkap</h3>
+          </div>
+        </div>
+        <button onclick="closeAuditRecordModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto flex-grow flex flex-col gap-4 text-xs" id="auditModalBody">
+        <!-- Injected dynamically by viewAuditRecordDetail() -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <button id="btnCopyAuditJson" onclick="copyCurrentAuditJson()" class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100 flex items-center space-x-1.5 shadow-sm transition">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Salin JSON Lengkap (Debug)</span>
+          </button>
+          <button id="btnCopyDocId" onclick="copyCurrentAuditDocId()" class="text-xs font-semibold text-slate-700 bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-100 flex items-center space-x-1.5 shadow-sm transition">
+            <i data-lucide="hash" class="w-3.5 h-3.5"></i>
+            <span>Salin ID Dokumen</span>
+          </button>
+        </div>
+        <button onclick="closeAuditRecordModal()" class="text-xs font-semibold bg-slate-900 text-white px-4 py-1.5 rounded-lg hover:bg-slate-800 transition shadow-sm">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISOLATED ENTERPRISE REPORT PRINT CONTAINER (Triggered via window.print() + @media print) -->
+  <div id="reportPrintContainer" class="hidden print:block bg-white text-slate-900">
+    <!-- Official Letterhead / Header -->
+    <div class="border-b-2 border-slate-900 pb-4 mb-5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-lg bg-indigo-950 text-white flex items-center justify-center font-bold text-base font-mono">
+            KPSTI
+          </div>
+          <div>
+            <h1 class="text-base font-extrabold tracking-wide uppercase text-slate-950 leading-tight">
+              Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI)
+            </h1>
+            <h2 class="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+              Sistem Pemantauan Projek Bersepadu (e-Pantau KPSTI)
+            </h2>
+            <p class="text-[11px] font-mono text-indigo-800 font-bold mt-0.5">
+              LAPORAN KHIDMAT PENASIHAT &amp; MAKLUM BALAS EJEN GEMINI ENTERPRISE
+            </p>
+          </div>
+        </div>
+        <div class="text-right text-[10px] font-mono text-slate-500">
+          <div class="font-bold text-slate-800" id="printReportDocId">KPSTI-GEMINI-REP-000</div>
+          <div id="printReportTimestamp">Tarikh: -</div>
+          <div class="text-emerald-700 font-semibold">Log Audit Firestore: DISAHKAN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metadata Grid -->
+    <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs mb-5">
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-500 block">Pegawai Bertanggungjawab</span>
+        <span id="printReportOfficer" class="font-semibold text-slate-900">Ermyza Hillary (ermyza.hillary@sabah.gov.my)</span>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-500 block">Enjin Analisis AI</span>
+        <span class="font-semibold text-slate-900">Google Discovery Engine (Enterprise Assistant)</span>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-500 block">Sesi Perbualan (Conversation ID)</span>
+        <span id="printReportSessionId" class="font-mono text-slate-700">conv-kpsti-01</span>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-slate-500 block">Klasifikasi Dokumen</span>
+        <span class="font-bold text-indigo-900">TERHAD / KEGUNAAN DALAMAN KERAJAAN</span>
+      </div>
+    </div>
+
+    <!-- Original Query Callout -->
+    <div class="mb-5">
+      <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+        <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+        <span>Pertanyaan / Arahan Asal Pengguna (Inquiry Prompt):</span>
+      </h3>
+      <div id="printReportPrompt" class="p-3 bg-indigo-50/50 border-l-4 border-indigo-600 rounded-r text-xs text-slate-800 italic leading-relaxed">
+        -
+      </div>
+    </div>
+
+    <!-- Official Markdown Response Content -->
+    <div class="mb-8">
+      <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center space-x-1.5 border-b border-slate-200 pb-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+        <span>Maklum Balas &amp; Analisis Rasmi Ejen Gemini Enterprise:</span>
+      </h3>
+      <div id="printReportContent" class="text-xs sm:text-sm text-slate-900 leading-relaxed space-y-3 prose max-w-none">
+        <!-- Rendered markdown inserted here -->
+      </div>
+    </div>
+
+    <!-- Verification & Sign-off Footer -->
+    <div class="border-t border-slate-300 pt-4 mt-8 text-[10px] text-slate-500 flex items-end justify-between">
+      <div>
+        <p class="font-bold text-slate-700">PENGESAHAN SISTEM AUTOMATIK:</p>
+        <p>Laporan ini dijana oleh Ejen Gemini Enterprise melalui proksi pelayan selamat e-Pantau KPSTI.</p>
+        <p>Data pertanyaan dan analisis telah direkodkan secara kekal di Firebase Cloud Firestore.</p>
+      </div>
+      <div class="text-right">
+        <div class="font-mono font-bold text-slate-800">SISTEM e-PANTAU KPSTI SABAH</div>
+        <p class="italic">Kerahsiaan Terpelihara &copy; 2026</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none no-print"></div>
+
+  <!-- Footer -->
+  <footer class="bg-gov-navy text-slate-400 text-xs py-4 border-t border-slate-700 no-print mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+        <span>e-Pantau KPSTI &copy; 2026 Kementerian Pendidikan, Sains, Teknologi dan Inovasi Sabah (KPSTI). Hak Cipta Terpelihara.</span>
+      </div>
+      <div class="text-[11px] text-slate-400 flex items-center space-x-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Firebase Cloud Firestore &amp; Google Auth Bersepadu</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT LOGIC (FIREBASE & MODULAR APP) ==================== -->
+  <script type="module" src="/src/app.ts"></script>
+
+  <!--
+  ========================================================================================
+  ARCHITECTURAL TRANSITION GUIDE: SCALING PROTOTYPE TO GEMINI ENTERPRISE & FIREBASE FIRESTORE
+  ========================================================================================
+
+  1. FIREBASE FIRESTORE INTEGRATION ARCHITECTURE:
+     - Collection Schema:
+       * `/kpsti_projects/{projectId}`: Document containing metadata, financial fields (approvedCeiling,
+         annualAllocation, actualSpend, projectedSpend), milestones, and status.
+       * `/kpsti_projects/{projectId}/audit_logs/{logId}`: Sub-collection storing immutable audit trails
+         recording human approvals (HITL), officer IDs, timestamp, and changes.
+       * `/kpsti_documents/{docId}`: Storage metadata linked to Firebase Storage buckets with access control.
+     - Security Rules:
+       * Enforce Role-Based Access Control (RBAC) via Firebase Authentication Custom Claims:
+         - 'pengurusan' (KSU/SUB): Full read/write + final verification approval privileges.
+         - 'pegawai_bajet': Financial allocation & expenditure modification permissions.
+         - 'pegawai_projek': Update physical progress, upload deliverables, log issues.
+     - Real-Time Listeners:
+       * Replace `state.projects` with `onSnapshot(collection(db, 'kpsti_projects'))` to enable instant
+         multi-officer synchronization across all ministry departments.
+
+  2. GEMINI ENTERPRISE AGENT INTEGRATION:
+     - Automated Anomaly Detection:
+       * Server-side Cloud Functions invoking `@google/genai` (gemini-2.5-flash / gemini-2.5-pro) on project update:
+         - Analyze discrepancy between financial burn-rate and physical milestone velocity.
+         - Automatically generate risk classifications and mitigation suggestions for delayed projects.
+     - Executive Briefing Generation:
+       * Generate automated natural language executive summaries (Bahasa Melayu) tailored for Sabah State
+         Cabinet meetings and JPP briefings with structured markdown output.
+     - Document Verification & OCR:
+       * Multimodal Gemini inspection of uploaded procurement vouchers and progress certificates to verify
+         figure consistency against registered claims.
+  ========================================================================================
+  -->
+</body>
+</html>

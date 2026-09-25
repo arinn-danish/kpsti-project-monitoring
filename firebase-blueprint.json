@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "submissions": {
+      "title": "Submissions",
+      "description": "Audit record of every project submission and official approval with timestamp",
+      "type": "object",
+      "properties": {
+        "submissionType": { "type": "string" },
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "data": { "type": "object" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["submissionType", "userId", "timestamp"]
+    },
+    "projects": {
+      "title": "Projects",
+      "description": "Government projects monitored under KPSTI e-Pantau",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "code": { "type": "string" },
+        "department": { "type": "string" },
+        "officer": { "type": "string" },
+        "ceiling": { "type": "number" },
+        "annualAllocation": { "type": "number" },
+        "projectedSpend": { "type": "number" },
+        "actualSpend": { "type": "number" },
+        "physicalProgress": { "type": "number" },
+        "status": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "issues": { "type": "string" },
+        "remarks": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["title", "department", "annualAllocation"]
+    }
+  },
+  "firestore": {
+    "/submissions/{submissionId}": {
+      "schema": "submissions",
+      "description": "Stores audit log of all submissions with timestamp"
+    },
+    "/projects/{projectId}": {
+      "schema": "projects",
+      "description": "Stores state of KPSTI projects"
+    }
+  }
+}
