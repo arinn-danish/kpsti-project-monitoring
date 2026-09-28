@@ -3,6 +3,10 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[[edge_functions]]
+  function = "agent-stream"
+  path = "/api/agent/stream"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
